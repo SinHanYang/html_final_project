@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[34]:
 
 
 import numpy as np
@@ -12,7 +12,7 @@ import pandas as pd
 
 # ### demographics
 
-# In[2]:
+# In[35]:
 
 
 #user= dempgraphics?
@@ -20,23 +20,25 @@ users=pd.read_csv('demographics.csv')
 users.columns=['Customer ID','Count','Gender','Age','Under_30','Senior_Citizen','Married','Dependents','Number_of_Dependents']
 # do we still need Under 30/ Senior Citizen, or we need to group the age ?
 users.drop(['Count'],axis=1,inplace=True)
+users.drop(['Under_30','Senior_Citizen','Dependents'],axis=1,inplace=True)
 users
 
 
 # ### location
 
-# In[3]:
+# In[36]:
 
 
 location=pd.read_csv('location.csv')
 location.columns=['Customer ID','Count','Country','State','City','Zip Code','Lat Long','Latitude','Longtitude']
 # Country, State are the same, latitude/longtitude's information is in Zip code
 location.drop(['Count','Country','State','Lat Long','Latitude','Longtitude'],axis=1,inplace=True)
+location.drop(['City'],axis=1,inplace=True)
 
 
 # ### population
 
-# In[4]:
+# In[37]:
 
 
 population=pd.read_csv('population.csv')
@@ -47,7 +49,7 @@ population
 
 # ### merge location and population ,and join users
 
-# In[5]:
+# In[38]:
 
 
 location=pd.merge(location,population,on='Zip Code')
@@ -57,7 +59,7 @@ users
 
 # satisfaction
 
-# In[6]:
+# In[39]:
 
 
 satisfaction=pd.read_csv('satisfaction.csv')
@@ -67,7 +69,7 @@ users=pd.merge(users,satisfaction,on='Customer ID',how='outer')
 
 # services
 
-# In[7]:
+# In[40]:
 
 
 from sklearn.compose import ColumnTransformer
@@ -81,10 +83,10 @@ users=pd.merge(users,services,on='Customer ID',how='outer')
 #ct = ColumnTransformer(transformers=[('encoder', OneHotEncoder(), columns_to_encode)], remainder='passthrough')
 users = pd.concat((users,pd.get_dummies(users.Married,prefix='Married')),1)
 users = pd.concat((users,pd.get_dummies(users.Gender,prefix='Gender')),1)
-users = pd.concat((users,pd.get_dummies(users.Under_30,prefix='Under_30')),1)
-users = pd.concat((users,pd.get_dummies(users.Senior_Citizen,prefix='Senior_Citizen')),1)
-users = pd.concat((users,pd.get_dummies(users.Dependents,prefix='Dependents')),1)
-users = pd.concat((users,pd.get_dummies(users.City,prefix='City')),1)
+#users = pd.concat((users,pd.get_dummies(users.Under_30,prefix='Under_30')),1)
+#users = pd.concat((users,pd.get_dummies(users.Senior_Citizen,prefix='Senior_Citizen')),1)
+#users = pd.concat((users,pd.get_dummies(users.Dependents,prefix='Dependents')),1)
+#users = pd.concat((users,pd.get_dummies(users.City,prefix='City')),1)
 #users = pd.concat((users,pd.get_dummies(users.Referred_a_friend,prefix='Referred_a_friend')),1)
 users = pd.concat((users,pd.get_dummies(users.Offer,prefix='Offer')),1)
 users = pd.concat((users,pd.get_dummies(users.Phone_Service,prefix='Phone_Service')),1)
@@ -103,7 +105,7 @@ users = pd.concat((users,pd.get_dummies(users.Contract,prefix='Contract')),1)
 users = pd.concat((users,pd.get_dummies(users.Paperless_Billing,prefix='Paperless_Billing')),1)
 users = pd.concat((users,pd.get_dummies(users.Payment_Method,prefix='Payment_Method')),1)
 
-users.drop(['Married','Gender','Under_30','Senior_Citizen','Dependents','City','Phone_Service','Multiple_Lines','Internet_Service','Internet_Type','Online_Security','Online_Backup','Device_Protection_Plan','Premium_Tech_Support','Streaming_TV','Streaming_Movies','Streaming_Music','Unlimited_Data','Contract','Paperless_Billing','Payment_Method'],axis=1,inplace=True)
+users.drop(['Married','Gender','Phone_Service','Multiple_Lines','Internet_Service','Offer','Internet_Type','Online_Security','Online_Backup','Device_Protection_Plan','Premium_Tech_Support','Streaming_TV','Streaming_Movies','Streaming_Music','Unlimited_Data','Contract','Paperless_Billing','Payment_Method'],axis=1,inplace=True)
 '''
 df["Married"]=pd.util.hash_array(df["Married"].to_numpy())
 df["Gender"]=pd.util.hash_array(df["Gender"].to_numpy())
@@ -134,27 +136,18 @@ users
 
 # status
 
-# In[8]:
+# In[41]:
 
 
 status=pd.read_csv('status.csv')
 status.columns=['Customer ID','Churn Category']
-status['ans'] = status['Churn Category']
-status.loc[status.ans=='No Churn','ans']='0'
-status.loc[status.ans=='Competitor','ans']='1'
-status.loc[status.ans=='Dissatisfaction','ans']='2'
-status.loc[status.ans=='Attitude','ans']='3'
-status.loc[status.ans=='Price','ans']='4'
-status.loc[status.ans=='Other','ans']='5'
-status.drop(['Churn Category'],axis=1,inplace=True)
-status.rename(columns={'ans':'Churn Category'}, inplace=True)
 #final train data
 train=pd.merge(status,users,on='Customer ID',how='left')
 
 
 # # Train Model
 
-# In[9]:
+# In[42]:
 
 
 from sklearn import preprocessing
@@ -164,15 +157,15 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVC 
 
 
-# In[10]:
+# In[43]:
 
 
 features=list(train)
-print(features)
+#print(features)
 features.remove('Customer ID')
 features.remove('Churn Category')
 features.remove('Referred_a_Friend')
-features.remove('Offer')
+#features.remove('Offer')
 '''
 features.remove('Under 30')
 features.remove('Married')
@@ -206,7 +199,7 @@ train_imputed = pd.DataFrame(poly.fit_transform(df))
 print(train_imputed.shape)
 
 
-# In[11]:
+# In[44]:
 
 
 # 10% vaildation 
@@ -215,31 +208,13 @@ x_train,x_test,y_train,y_test = train_test_split(train_imputed,train.loc[:, 'Chu
 
 # ### SVM_linear 
 
-# In[12]:
+# In[57]:
 
 
-best_acc=0
-best_c=0
-best_g=0
-best_d=0
-tc=1
-for c in range (1):
-    tg=1
-    for g in range(1):
-        for d in range(3,4):
-            print(c,g,d)
-            svm_model = SVC(kernel = 'rbf',degree=d,gamma=tg, C = tc).fit(x_train, y_train)
-            svm_predictions = svm_model.predict(x_test)
-            accuracy = svm_model.score(x_test, y_test)
-            if(accuracy>best_acc):
-                best_acc=accuracy
-                best_c=tc
-                best_g=tg
-                best_d=d
-        tg*=10
-    tc*=10
-print(best_acc)
-svm_model = SVC(kernel = 'rbf',degree=best_d,gamma=best_g, C = best_c).fit(train_imputed, train.loc[:,'Churn Category'])
+svm_model_linear = SVC(kernel = 'linear', C = 1).fit(x_train, y_train)
+svm_predictions = svm_model_linear.predict(x_test)
+accuracy = svm_model_linear.score(x_test, y_test)
+print(accuracy)
 
 
 # ### decision tree
@@ -307,7 +282,7 @@ poly = PolynomialFeatures(degree=2, interaction_only=True)
 test_imputed = pd.DataFrame(poly.fit_transform(df))
 #print(train_imputed.shape)
 print(test_imputed)
-dftest['Churn Category']=svm_model.predict(test_imputed)
+dftest['Churn Category']=svm_model_linear.predict(test_imputed)
 
 #dftest['Churn Category']=dtree_model.predict(test_imputed)
 
@@ -324,6 +299,15 @@ dftest['Churn Category']=svm_model.predict(test_imputed)
 
 
 testID.columns=['Customer ID','Churn Category']
+testID['ans'] = testID['Churn Category']
+testID.loc[testID.ans=='No Churn','ans']='0'
+testID.loc[testID.ans=='Competitor','ans']='1'
+testID.loc[testID.ans=='Dissatisfaction','ans']='2'
+testID.loc[testID.ans=='Attitude','ans']='3'
+testID.loc[testID.ans=='Price','ans']='4'
+testID.loc[testID.ans=='Other','ans']='5'
+testID.drop(['Churn Category'],axis=1,inplace=True)
+testID.rename(columns={'ans':'Churn Category'}, inplace=True)
 submiss=pd.DataFrame(testID)
 submiss.to_csv('submission.csv',index=False)
 
