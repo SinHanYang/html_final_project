@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[153]:
+# In[2]:
 
 
 import numpy as np
@@ -14,7 +14,7 @@ import scipy
 
 # ### demographics
 
-# In[117]:
+# In[3]:
 
 
 #user= dempgraphics?
@@ -28,7 +28,7 @@ users
 
 # ### location
 
-# In[118]:
+# In[4]:
 
 
 location=pd.read_csv('location.csv')
@@ -40,7 +40,7 @@ location.drop(['City'],axis=1,inplace=True)
 
 # ### population
 
-# In[119]:
+# In[5]:
 
 
 population=pd.read_csv('population.csv')
@@ -51,7 +51,7 @@ population
 
 # ### merge location and population ,and join users
 
-# In[120]:
+# In[6]:
 
 
 location=pd.merge(location,population,on='Zip Code')
@@ -61,7 +61,7 @@ users
 
 # satisfaction
 
-# In[121]:
+# In[7]:
 
 
 satisfaction=pd.read_csv('satisfaction.csv')
@@ -71,13 +71,13 @@ users=pd.merge(users,satisfaction,on='Customer ID',how='outer')
 
 # services
 
-# In[122]:
+# In[8]:
 
 
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 services=pd.read_csv('services.csv')
-services.columns=['Customer ID','Count','Quarter','Referred_a_Friend','Number of Referrals','Tenure in Months','Offer','Phone_Service','Avg Monthly Long Distance Charges','Multiple_Lines','Internet_Service','Internet_Type','Avg Monthly GB Download','Online_Security','Online_Backup','Device_Protection_Plan','Premium_Tech_Support','Streaming_TV','Streaming_Movies','Streaming_Music','Unlimited_Data','Contract','Paperless_Billing','Payment_Method','Monthly Charge','Total Charges','Total Refunds','Total Extra Data Charges','Total Long Distance Charges','Total Revenue']
+services.columns=['Customer ID','Count','Quarter','Referred_a_friend','Number of Referrals','Tenure in Months','Offer','Phone_Service','Avg Monthly Long Distance Charges','Multiple_Lines','Internet_Service','Internet_Type','Avg Monthly GB Download','Online_Security','Online_Backup','Device_Protection_Plan','Premium_Tech_Support','Streaming_TV','Streaming_Movies','Streaming_Music','Unlimited_Data','Contract','Paperless_Billing','Payment_Method','Monthly Charge','Total Charges','Total Refunds','Total Extra Data Charges','Total Long Distance Charges','Total Revenue']
 # Quarter are always Q3
 services.drop(['Count','Quarter'],axis=1,inplace=True)
 users=pd.merge(users,services,on='Customer ID',how='outer')
@@ -86,14 +86,13 @@ users=pd.merge(users,services,on='Customer ID',how='outer')
 
 # give null a category?
 #users.loc[users.Married.isnull(),'Married']='None'
-
 users = pd.concat((users,pd.get_dummies(users.Married,prefix='Married')),1)
 users = pd.concat((users,pd.get_dummies(users.Gender,prefix='Gender')),1)
 #users = pd.concat((users,pd.get_dummies(users.Under_30,prefix='Under_30')),1)
 #users = pd.concat((users,pd.get_dummies(users.Senior_Citizen,prefix='Senior_Citizen')),1)
 #users = pd.concat((users,pd.get_dummies(users.Dependents,prefix='Dependents')),1)
 #users = pd.concat((users,pd.get_dummies(users.City,prefix='City')),1)
-#users = pd.concat((users,pd.get_dummies(users.Referred_a_friend,prefix='Referred_a_friend')),1)
+users = pd.concat((users,pd.get_dummies(users.Referred_a_friend,prefix='Referred_a_friend')),1)
 users = pd.concat((users,pd.get_dummies(users.Offer,prefix='Offer')),1)
 users = pd.concat((users,pd.get_dummies(users.Phone_Service,prefix='Phone_Service')),1)
 users = pd.concat((users,pd.get_dummies(users.Multiple_Lines,prefix='Multiple_Lines')),1)
@@ -111,7 +110,7 @@ users = pd.concat((users,pd.get_dummies(users.Contract,prefix='Contract')),1)
 users = pd.concat((users,pd.get_dummies(users.Paperless_Billing,prefix='Paperless_Billing')),1)
 users = pd.concat((users,pd.get_dummies(users.Payment_Method,prefix='Payment_Method')),1)
 
-users.drop(['Married','Gender','Phone_Service','Multiple_Lines','Internet_Service','Offer','Internet_Type','Online_Security','Online_Backup','Device_Protection_Plan','Premium_Tech_Support','Streaming_TV','Streaming_Movies','Streaming_Music','Unlimited_Data','Contract','Paperless_Billing','Payment_Method'],axis=1,inplace=True)
+users.drop(['Married','Gender','Phone_Service','Multiple_Lines','Internet_Service','Referred_a_friend','Offer','Internet_Type','Online_Security','Online_Backup','Device_Protection_Plan','Premium_Tech_Support','Streaming_TV','Streaming_Movies','Streaming_Music','Unlimited_Data','Contract','Paperless_Billing','Payment_Method'],axis=1,inplace=True)
 '''
 df["Married"]=pd.util.hash_array(df["Married"].to_numpy())
 df["Gender"]=pd.util.hash_array(df["Gender"].to_numpy())
@@ -142,7 +141,7 @@ users
 
 # status
 
-# In[123]:
+# In[9]:
 
 
 status=pd.read_csv('status.csv')
@@ -162,7 +161,7 @@ train=pd.merge(status,users,on='Customer ID',how='left')
 
 # # Train Model
 
-# In[124]:
+# In[10]:
 
 
 from sklearn import preprocessing
@@ -174,14 +173,14 @@ from sklearn.preprocessing import StandardScaler
 from libsvm.svmutil import *
 
 
-# In[125]:
+# In[11]:
 
 
 features=list(train)
 #print(features)
 features.remove('Customer ID')
 features.remove('Churn Category')
-features.remove('Referred_a_Friend')
+#features.remove('Referred_a_Friend')
 #features.remove('Offer')
 imputer = SimpleImputer(missing_values=np.nan, strategy='median')
 imputer = imputer.fit(train.loc[:, features])
@@ -195,16 +194,16 @@ train_imputed = pd.DataFrame(train_imputed)
 train_imputed
 
 
-# In[126]:
+# In[14]:
 
 
 # 10% vaildation 
 x_test,x_train,y_test,y_train = train_test_split(train_imputed,train.loc[:, 'Churn Category'],test_size=0.90, random_state=0)
 
-
+'''
 # ### SVM_linear 
 
-# In[127]:
+# In[13]:
 
 
 for g in range(1):
@@ -221,7 +220,7 @@ for g in range(1):
 svm_model_linear = SVC(kernel = 'rbf',gamma=math.pow(10,0), C = math.pow(10,1)).fit(train_imputed, train.loc[:,'Churn Category'])
 
 
-# In[129]:
+# In[22]:
 
 
 
@@ -229,15 +228,15 @@ y_train_num=y_train.to_numpy()
 y_train_num=y_train_num.astype(np.int)
 x_train_num=x_train.to_numpy()
 prob=svm_problem(y_train_num,x_train_num)
-param = svm_parameter('-t 2 -c 10')
+param = svm_parameter('-t 2 -c 10 -q')
 libsvm_train=svm_train(prob,param)
 y_test_num=y_test.to_numpy()
 y_test_num=y_test_num.astype(np.int)
 x_test_num=x_test.to_numpy()
-svm_predict(y_train_num,x_train_num,libsvm_train)
+p_label, p_acc, p_val=svm_predict(y_train_num,x_train_num,libsvm_train)
 
 
-# In[148]:
+# In[23]:
 
 
 y_test_num=y_test_num.astype(np.int)
@@ -248,11 +247,11 @@ y_train_all=y_train_all.astype(np.int)
 x_train_all=train_imputed.to_numpy()
 prob_all=svm_problem(y_train_all,x_train_all)
 libsvm_train=svm_train(prob_all,param)
-
+'''
 
 # ### decision tree
 
-# In[131]:
+# In[37]:
 
 
 from sklearn.tree import DecisionTreeClassifier
@@ -276,26 +275,22 @@ print("knn",accuracy)
 
 # ### RandomForest + ada boost
 
-# In[144]:
+# In[35]:
 
 
 from sklearn.ensemble import RandomForestClassifier
+for tree in range(10,11):
+    for d in range(10,11):
+        rf = RandomForestClassifier(n_estimators = tree*1000, max_depth=d,oob_score=True)
+        rf.fit(train_imputed,train.loc[:, 'Churn Category'])
+        print(f"tree:{tree*1000},d:{d},acc:{rf.oob_score_}")
+
+
+# In[27]:
+
+
 from sklearn.ensemble import AdaBoostClassifier
-
-rf = RandomForestClassifier(n_estimators = 1500, random_state = 0,n_jobs=-1)
-
-
-
-rf.fit(x_train, y_train)
-print("rf")
-rf.score(x_test, y_test)
-rf.fit(train_imputed,train.loc[:, 'Churn Category'])
-
-
-# In[134]:
-
-
-ada = AdaBoostClassifier(n_estimators = 1000)
+ada = AdaBoostClassifier(DecisionTreeClassifier(max_depth=2),n_estimators = 20,learning_rate=0.2)
 ada.fit(x_train, y_train)
 print("ada")
 ada.score(x_test, y_test)
@@ -306,7 +301,7 @@ ada.fit(train_imputed,train.loc[:, 'Churn Category'])
 
 # ### handle test
 
-# In[ ]:
+# In[25]:
 
 
 testID=pd.read_csv('Test_IDs.csv')
@@ -323,10 +318,10 @@ test_imputed=scalar.fit_transform(test_imputed)
 test_imputed = pd.DataFrame(test_imputed)
 #print(train_imputed.shape)
 
-
+'''
 # ### SVM prediction
 
-# In[184]:
+# In[ ]:
 
 
 #dftest['Churn Category']=svm_model_linear.predict(test_imputed)
@@ -336,25 +331,25 @@ fake_y=np.zeros(total_rows)
 p_label, p_acc, p_val=svm_predict(fake_y,test_imputed,libsvm_train)
 p_label = list(map(int, p_label))
 dftest['Churn Category']=p_label
-
+'''
 
 # ### not svm
 
-# In[ ]:
+# In[30]:
 
 
 #dftest['Churn Category']=dtree_model.predict(test_imputed)
 
 #dftest['Churn Category']=knn.predict(test_imputed)
 
-#dftest['Churn Category']=rf.predict(test_imputed)
+dftest['Churn Category']=rf.predict(test_imputed)
 
-dftest['Churn Category']=ada.predict(test_imputed)
+#dftest['Churn Category']=ada.predict(test_imputed)
 
 
 # ### Output result
 
-# In[185]:
+# In[31]:
 
 
 dftest.columns=['Customer ID','Churn Category']
