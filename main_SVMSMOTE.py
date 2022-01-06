@@ -150,6 +150,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import f1_score
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.over_sampling import BorderlineSMOTE
+from imblearn.over_sampling import SVMSMOTE
 from libsvm.svmutil import *
 
 
@@ -185,24 +186,24 @@ x_test,x_train,y_test,y_train = train_test_split(train_imputed,train.loc[:, 'Chu
 
 
 ros = RandomOverSampler(random_state=0)
-x_train, y_train = ros.fit_resample(x_train, y_train)
-#x_train, y_train = BorderlineSMOTE().fit_resample(x_train, y_train)
-
+#x_train, y_train = ros.fit_resample(x_train, y_train)
+x_train, y_train = BorderlineSMOTE().fit_resample(x_train, y_train)
+x_train, y_train = SVMSMOTE().fit_resample(x_train, y_train)
 
 # ### SVM_linear 
 
 # In[23]:
 
-'''
+
 
 y_train_num=y_train.to_numpy()
 y_train_num=y_train_num.astype(np.int)
 x_train_num=x_train.to_numpy()
 prob=svm_problem(y_train_num,x_train_num)
-#C=0.1
+C=0.1
 for i in range(1):
-#    print("C:",C)
-    param = svm_parameter('-t 0 -c 0.19 -q')
+    print("C:",C)
+    param = svm_parameter(f'-t 0 -c {C} -q')
     libsvm_train=svm_train(prob,param)
     y_test_num=y_test.to_numpy()
     y_test_num=y_test_num.astype(np.int)
@@ -218,14 +219,15 @@ for i in range(1):
     print(score)
     matrix=confusion_matrix(y_test_num,p_label)
     print(matrix)
-#    C*=10
+    C*=3.16
 
-y_train_all=train.loc[:,'Churn Category'].to_numpy()
+x_all, y_all = SVMSMOTE().fit_resample(train_imputed, train.loc[:,'Churn Category'])
+y_train_all=y_all.to_numpy()
 y_train_all=y_train_all.astype(np.int)
-x_train_all=train_imputed.to_numpy()
+x_train_all=x_all.to_numpy()
 prob_all=svm_problem(y_train_all,x_train_all)
 libsvm_train=svm_train(prob_all,param)
-'''
+
 '''
 # ### decision tree
 
@@ -267,20 +269,23 @@ for tree in range(10,11):
 
 
 # In[ ]:
-'''
+
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import AdaBoostClassifier
-ada = AdaBoostClassifier(DecisionTreeClassifier(max_depth=2),n_estimators = 1000,learning_rate=0.2)
-ada.fit(x_train, y_train)
-print("ada",ada.score(x_test,y_test))
-pre=ada.predict(x_test)
-score=f1_score(y_test,pre,average='macro')
-print("f1 score",score)
-matrix=confusion_matrix(y_test,pre)
-print(matrix)
-#ada.fit(train_imputed,train.loc[:, 'Churn Category'])
-
+from sklearn.ensemble import AdaBoostClassifier 
+est=240
+for i in range(1):
+    ada = AdaBoostClassifier(DecisionTreeClassifier(max_depth=1),n_estimators =est,learning_rate=0.2)
+    ada.fit(x_train, y_train)
+    print("ada,est:",est,ada.score(x_test,y_test))
+    pre=ada.predict(x_test)
+    score=f1_score(y_test,pre,average='macro')
+    print("f1 score",score)
+    matrix=confusion_matrix(y_test,pre)
+    print(matrix)
+    est+=20
+ada.fit(train_imputed,train.loc[:, 'Churn Category'])
+'''
 
 # ### Prediction
 
@@ -308,7 +313,7 @@ test_imputed = pd.DataFrame(test_imputed)
 
 # In[ ]:
 
-'''
+
 #dftest['Churn Category']=svm_model_linear.predict(test_imputed)
 total_rows=test_imputed.shape[0]
 test_imputed=test_imputed.to_numpy()
@@ -317,7 +322,7 @@ p_label, p_acc, p_val=svm_predict(fake_y,test_imputed,libsvm_train)
 p_label = list(map(int, p_label))
 dftest['Churn Category']=p_label
 
-'''
+
 # ### not svm
 
 # In[ ]:
@@ -329,7 +334,7 @@ dftest['Churn Category']=p_label
 
 #dftest['Churn Category']=rf.predict(test_imputed)
 
-dftest['Churn Category']=ada.predict(test_imputed)
+#dftest['Churn Category']=ada.predict(test_imputed)
 
 
 # ### Output result
