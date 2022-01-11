@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[10]:
+# In[1]:
 
 
 import numpy as np
@@ -14,7 +14,7 @@ import scipy
 
 # ### demographics
 
-# In[11]:
+# In[2]:
 
 
 #user= dempgraphics?
@@ -28,19 +28,19 @@ users
 
 # ### location
 
-# In[12]:
+# In[3]:
 
 
 location=pd.read_csv('location.csv')
 location.columns=['Customer ID','Count','Country','State','City','Zip Code','Lat Long','Latitude','Longtitude']
 # Country, State are the same, latitude/longtitude's information is in Zip code
 location.drop(['Count','Country','State','Lat Long','Latitude','Longtitude'],axis=1,inplace=True)
-location.drop(['City'],axis=1,inplace=True)
+#location.drop(['City'],axis=1,inplace=True)
 
 
 # ### population
 
-# In[13]:
+# In[4]:
 
 
 population=pd.read_csv('population.csv')
@@ -51,7 +51,7 @@ population
 
 # ### merge location and population ,and join users
 
-# In[14]:
+# In[5]:
 
 
 location=pd.merge(location,population,on='Zip Code')
@@ -61,7 +61,7 @@ users
 
 # satisfaction
 
-# In[15]:
+# In[6]:
 
 
 satisfaction=pd.read_csv('satisfaction.csv')
@@ -71,7 +71,7 @@ users=pd.merge(users,satisfaction,on='Customer ID',how='outer')
 
 # services
 
-# In[16]:
+# In[7]:
 
 
 from sklearn.compose import ColumnTransformer
@@ -88,6 +88,7 @@ users=pd.merge(users,services,on='Customer ID',how='outer')
 #users.loc[users.Married.isnull(),'Married']='None'
 users = pd.concat((users,pd.get_dummies(users.Married,prefix='Married')),1)
 users = pd.concat((users,pd.get_dummies(users.Gender,prefix='Gender')),1)
+users["City"]=pd.util.hash_array(users["City"].to_numpy())
 #users = pd.concat((users,pd.get_dummies(users.Under_30,prefix='Under_30')),1)
 #users = pd.concat((users,pd.get_dummies(users.Senior_Citizen,prefix='Senior_Citizen')),1)
 #users = pd.concat((users,pd.get_dummies(users.Dependents,prefix='Dependents')),1)
@@ -117,7 +118,7 @@ users
 
 # status
 
-# In[17]:
+# In[8]:
 
 
 status=pd.read_csv('status.csv')
@@ -137,7 +138,7 @@ train=pd.merge(status,users,on='Customer ID',how='left')
 
 # # Train Model
 
-# In[18]:
+# In[9]:
 
 
 from sklearn import preprocessing
@@ -149,11 +150,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import f1_score
 from imblearn.over_sampling import RandomOverSampler
+from imblearn.over_sampling import SMOTE, ADASYN
 from imblearn.over_sampling import BorderlineSMOTE
+from imblearn.over_sampling import SVMSMOTE
 from libsvm.svmutil import *
 
 
-# In[19]:
+# In[10]:
 
 
 features=list(train)
@@ -174,59 +177,56 @@ train_imputed = pd.DataFrame(train_imputed)
 train_imputed
 
 
-# In[20]:
+# In[11]:
 
 
 # 10% vaildation 
 x_test,x_train,y_test,y_train = train_test_split(train_imputed,train.loc[:, 'Churn Category'],test_size=0.90, random_state=0)
 
 
-# In[21]:
+# In[12]:
 
 
 ros = RandomOverSampler(random_state=0)
-x_train, y_train = ros.fit_resample(x_train, y_train)
+#x_train, y_train = ros.fit_resample(x_train, y_train)
 #x_train, y_train = BorderlineSMOTE().fit_resample(x_train, y_train)
+#x_train, y_train = SVMSMOTE().fit_resample(x_train, y_train)
 
 
-# ### SVM_linear 
+# ### SVM 
 
-# In[23]:
+# In[19]:
 
-'''
+
 
 y_train_num=y_train.to_numpy()
 y_train_num=y_train_num.astype(np.int)
 x_train_num=x_train.to_numpy()
 prob=svm_problem(y_train_num,x_train_num)
-#C=0.1
-for i in range(1):
-#    print("C:",C)
-    param = svm_parameter('-t 0 -c 0.19 -q')
-    libsvm_train=svm_train(prob,param)
-    y_test_num=y_test.to_numpy()
-    y_test_num=y_test_num.astype(np.int)
-    x_test_num=x_test.to_numpy()
-    p_label, p_acc, p_val=svm_predict(y_train_num,x_train_num,libsvm_train)
+param = svm_parameter('-t 0 -c 0.15 -q')
+libsvm_train=svm_train(prob,param)
+y_test_num=y_test.to_numpy()
+y_test_num=y_test_num.astype(np.int)
+x_test_num=x_test.to_numpy()
+p_label, p_acc, p_val=svm_predict(y_train_num,x_train_num,libsvm_train)
 
 
+# In[20]:
 
 
-    y_test_num=y_test_num.astype(np.int)
-    p_label, p_acc, p_val=svm_predict(y_test_num,x_test_num,libsvm_train)
-    score=f1_score(y_test_num,p_label,average='macro')
-    print(score)
-    matrix=confusion_matrix(y_test_num,p_label)
-    print(matrix)
-#    C*=10
-
+y_test_num=y_test_num.astype(np.int)
+p_label, p_acc, p_val=svm_predict(y_test_num,x_test_num,libsvm_train)
+score=f1_score(y_test_num,p_label,average='macro')
+print(score)
+matrix=confusion_matrix(y_test_num,p_label)
+print(matrix)
 y_train_all=train.loc[:,'Churn Category'].to_numpy()
 y_train_all=y_train_all.astype(np.int)
 x_train_all=train_imputed.to_numpy()
 prob_all=svm_problem(y_train_all,x_train_all)
 libsvm_train=svm_train(prob_all,param)
-'''
-'''
+
+
 # ### decision tree
 
 # In[ ]:
@@ -235,10 +235,12 @@ libsvm_train=svm_train(prob_all,param)
 from sklearn.tree import DecisionTreeClassifier
 dtree_model = DecisionTreeClassifier(max_depth = 1).fit(x_train, y_train)
 dtree_predictions = dtree_model.predict(x_test)
-matrix=confusion_matrix(y_test_num,dtree_predictions)
+matrix=confusion_matrix(y_test,dtree_predictions)
 print(matrix)
-accuracy = dtree_model.score(x_test, y_test)
-print("dtree",accuracy)
+score=f1_score(y_test,dtree_predictions,average='macro')
+print(score)
+#accuracy = dtree_model.score(x_test, y_test)
+#print("dtree",accuracy)
 dtree_model = DecisionTreeClassifier(max_depth = 1).fit(train_imputed,train.loc[:,'Churn Category'])
 
 
@@ -248,9 +250,12 @@ dtree_model = DecisionTreeClassifier(max_depth = 1).fit(train_imputed,train.loc[
 
 
 from sklearn.neighbors import KNeighborsClassifier
-knn = KNeighborsClassifier(n_neighbors = 10).fit(x_train, y_train)
-accuracy = knn.score(x_test, y_test)
-print("knn",accuracy)
+knn = KNeighborsClassifier(n_neighbors = 50).fit(x_train, y_train)
+predictions = knn.predict(x_test)
+matrix=confusion_matrix(y_test,predictions)
+print(matrix)
+score=f1_score(y_test,predictions,average='macro')
+print(score)
 
 
 # ### RandomForest + ada boost
@@ -262,31 +267,41 @@ from sklearn.ensemble import RandomForestClassifier
 for tree in range(10,11):
     for d in range(10,11):
         rf = RandomForestClassifier(n_estimators = tree*1000, max_depth=d,oob_score=True)
-        rf.fit(train_imputed,train.loc[:, 'Churn Category'])
+        rf.fit(x_train,y_train)
         print(f"tree:{tree*1000},d:{d},acc:{rf.oob_score_}")
+        dtree_predictions = rf.predict(x_test)
+        matrix=confusion_matrix(y_test,dtree_predictions)
+        print(matrix)
+        score=f1_score(y_test,dtree_predictions,average='macro')
+        print(score)
+rf.fit(train_imputed,train.loc[:,'Churn Category'])
 
 
 # In[ ]:
-'''
+
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
-ada = AdaBoostClassifier(DecisionTreeClassifier(max_depth=2),n_estimators = 1000,learning_rate=0.2)
-ada.fit(x_train, y_train)
-print("ada",ada.score(x_test,y_test))
-pre=ada.predict(x_test)
-score=f1_score(y_test,pre,average='macro')
-print("f1 score",score)
-matrix=confusion_matrix(y_test,pre)
-print(matrix)
-#ada.fit(train_imputed,train.loc[:, 'Churn Category'])
+est=60
+for i in range(1):
+    ada = AdaBoostClassifier(DecisionTreeClassifier(max_depth=2),n_estimators = est,learning_rate=0.2)
+    ada.fit(x_train, y_train)
+    print("ada",est,ada.score(x_test,y_test))
+    pre=ada.predict(x_test)
+    score=f1_score(y_test,pre,average='macro')
+    print("f1 score",score)
+    matrix=confusion_matrix(y_test,pre)
+    print(matrix)
+    est+=15
+x_all, y_all = ros.fit_resample(train_imputed, train.loc[:,'Churn Category'])
+ada.fit(x_all,y_all)
 
 
 # ### Prediction
 
 # ### handle test
 
-# In[ ]:
+# In[15]:
 
 
 testID=pd.read_csv('Test_IDs.csv')
@@ -306,9 +321,9 @@ test_imputed = pd.DataFrame(test_imputed)
 
 # ### SVM prediction
 
-# In[ ]:
+# In[16]:
 
-'''
+
 #dftest['Churn Category']=svm_model_linear.predict(test_imputed)
 total_rows=test_imputed.shape[0]
 test_imputed=test_imputed.to_numpy()
@@ -317,10 +332,10 @@ p_label, p_acc, p_val=svm_predict(fake_y,test_imputed,libsvm_train)
 p_label = list(map(int, p_label))
 dftest['Churn Category']=p_label
 
-'''
+
 # ### not svm
 
-# In[ ]:
+# In[17]:
 
 
 #dftest['Churn Category']=dtree_model.predict(test_imputed)
@@ -329,12 +344,12 @@ dftest['Churn Category']=p_label
 
 #dftest['Churn Category']=rf.predict(test_imputed)
 
-dftest['Churn Category']=ada.predict(test_imputed)
+#dftest['Churn Category']=ada.predict(test_imputed)
 
 
 # ### Output result
 
-# In[ ]:
+# In[18]:
 
 
 dftest.columns=['Customer ID','Churn Category']
